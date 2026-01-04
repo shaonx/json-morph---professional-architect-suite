@@ -460,7 +460,7 @@ const App: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <header className={`h-14 border-b ${borderColor} flex items-center px-6 justify-between ${panelBg} shrink-0 transition-colors duration-300`}>
           <div className="flex items-center gap-4 min-w-0">
-            <h1 className="text-sm font-bold tracking-tight text-blue-500 shrink-0">MORPH_JSON_ARCH</h1>
+            <h1 className="text-sm font-bold tracking-tight text-blue-500 shrink-0">JSON Morph</h1>
             <AnimatePresence>
               {selectedPath && (
                 <motion.div 
