@@ -746,7 +746,7 @@ const App: React.FC = () => {
                 <div className="p-8 h-full overflow-auto relative">
                   <div className="mb-8">
                     <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-2 flex items-center gap-3`}>
-                      <Share2 className="text-blue-500" />
+                      <FileOutput className="text-blue-500" />
                       {t.exportTitle}
                     </h2>
                     <p className={`${textMuted} text-sm max-w-2xl`}>
