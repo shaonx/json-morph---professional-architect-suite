@@ -38,7 +38,8 @@ import {
   Wand2,
   Globe,
   Sun,
-  Moon
+  Moon,
+  FileOutput
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { JsonNode } from './components/JsonNode';
@@ -441,7 +442,7 @@ const App: React.FC = () => {
               {mode === 'builder' && <Wand2 size={18} />}
               {mode === 'table' && <TableIcon size={18} />}
               {mode === 'analysis' && <Zap size={18} />}
-              {mode === 'export' && <Share2 size={18} />}
+              {mode === 'export' && <FileOutput size={18} />}
             </button>
           ))}
         </div>
