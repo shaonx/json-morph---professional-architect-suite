@@ -12,7 +12,7 @@ interface ShareModalProps {
 
 export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, language }) => {
   const t = translations[language];
-  const url = 'https://json-morph.com';
+  const url = 'https://json.open-close.shop';
   const text = 'Check out JSON Morph - The Professional Architect Suite for JSON analysis and transformation!';
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
