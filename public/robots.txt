@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://json.open-close.shop/sitemap.xml

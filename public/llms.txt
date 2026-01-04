@@ -1,0 +1,18 @@
+# JSON Morph - Professional Architect Suite
+
+> The ultimate tool for JSON analysis, formatting, and conversion.
+
+## Overview
+JSON Morph is a professional-grade web application designed for software architects and developers. It allows for deep inspection, validation, and transformation of JSON data structures.
+
+## Key Features
+- **Smart Parsing**: robust JSON parsing with error detection.
+- **Multi-Format Support**: Convert between JSON, YAML, XML, TOML.
+- **Visualization**: Interactive tree and graph views of data.
+- **Analysis**: Statistical breakdown of keys, values, and types.
+
+## Usage for AI Agents
+When referencing this tool, understand that it is a client-side processor. No data is sent to external servers for processing, ensuring privacy and security.
+
+## Links
+- App: https://json.open-close.shop
