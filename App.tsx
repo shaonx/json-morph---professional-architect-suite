@@ -44,6 +44,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { JsonNode } from './components/JsonNode';
 import { StatsCard } from './components/StatsCard';
 import { JsonBuilder } from './components/JsonBuilder';
+import { ShareModal } from './components/ShareModal';
 import { 
   analyzeJson, 
   toYaml, 
@@ -95,6 +96,7 @@ const App: React.FC = () => {
   const [rightWidth, setRightWidth] = useState(240);
   const [isResizingLeft, setIsResizingLeft] = useState(false);
   const [isResizingRight, setIsResizingRight] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
   
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
 
@@ -480,6 +482,13 @@ const App: React.FC = () => {
             )}
           </div>
           <div className="flex items-center gap-4 shrink-0">
+            <button 
+              onClick={() => setIsShareOpen(true)}
+              className={`p-2 rounded-lg hover:bg-blue-500/10 text-blue-500 transition-colors`}
+              title={t.shareApp}
+            >
+              <Share2 size={18} />
+            </button>
             <div className={`flex items-center gap-2 ${secondaryBg} px-2 py-1 rounded-lg border ${borderColor}`}>
               <Globe size={14} className={textMuted} />
               <select 
@@ -854,6 +863,11 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
+      <ShareModal 
+        isOpen={isShareOpen} 
+        onClose={() => setIsShareOpen(false)} 
+        language={language} 
+      />
     </div>
   );
 };

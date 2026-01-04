@@ -58,7 +58,14 @@ export const translations = {
     imageDesc: 'Beautifully rendered code snippet image.',
     mdDesc: 'Formatted table within documentation.',
     tomlDesc: 'Minimal configuration file format.',
-    jsDesc: 'Export as native JavaScript object code.'
+    jsDesc: 'Export as native JavaScript object code.',
+    shareApp: 'Share App',
+    shareTitle: 'Share JSON Morph',
+    shareDesc: 'Help us spread the word about this tool.',
+    shareOnX: 'Share on X',
+    shareOnFB: 'Share on Facebook',
+    shareOnLI: 'Share on LinkedIn',
+    copyLink: 'Copy Link'
   },
   zh: {
     tree: '树状视图',
@@ -81,7 +88,7 @@ export const translations = {
     aggregation: '数值聚合',
     distribution: '字段类型分布',
     frequency: '键名频率',
-    hits: '次点击',
+    hits: '次命中',
     items: '个项目',
     exportTitle: '转换并导出 JSON',
     exportDesc: '将结构化 JSON 数据转换为不同的通用格式。点击下方卡片，系统将为您分析层级结构并即时生成目标格式的预览。',
@@ -116,7 +123,14 @@ export const translations = {
     imageDesc: '渲染精美的代码片段图像。',
     mdDesc: '文档中的格式化表格。',
     tomlDesc: '最小配置文件格式。',
-    jsDesc: '导出为原生 JavaScript 对象代码。'
+    jsDesc: '导出为原生 JavaScript 对象代码。',
+    shareApp: '分享应用',
+    shareTitle: '分享 JSON Morph',
+    shareDesc: '帮助我们推广这个工具。',
+    shareOnX: '分享到 X (Twitter)',
+    shareOnFB: '分享到 Facebook',
+    shareOnLI: '分享到 LinkedIn',
+    copyLink: '复制链接'
   },
   zh_TW: {
     tree: '樹狀視圖',
@@ -232,7 +246,14 @@ export const translations = {
     imageDesc: '아름답게 렌더링된 코드 스니펫 이미지입니다.',
     mdDesc: '문서 내의 형식이 지정된 테이블입니다.',
     tomlDesc: '최소한의 구성 파일 형식입니다.',
-    jsDesc: '네이티브 JavaScript 객체 코드로 내보냅니다.'
+    jsDesc: '네이티브 JavaScript 객체 코드로 내보냅니다.',
+    shareApp: '앱 공유',
+    shareTitle: 'JSON Morph 공유',
+    shareDesc: '이 도구를 널리 알리는 데 도움을 주세요.',
+    shareOnX: 'X (Twitter)에 공유',
+    shareOnFB: 'Facebook에 공유',
+    shareOnLI: 'LinkedIn에 공유',
+    copyLink: '링크 복사'
   },
   ja: {
     tree: 'ツリー表示',
@@ -290,6 +311,13 @@ export const translations = {
     imageDesc: '美しくレンダリングされたコードスニペット画像です。',
     mdDesc: 'ドキュメント内のフォーマット済みテーブルです。',
     tomlDesc: '最小限の構成ファイル形式です。',
-    jsDesc: 'ネイティブ JavaScript オブジェクトコードとしてエクスポートします。'
+    jsDesc: 'ネイティブ JavaScript オブジェクトコードとしてエクスポートします。',
+    shareApp: 'アプリを共有',
+    shareTitle: 'JSON Morphを共有',
+    shareDesc: 'このツールを広めるのを手伝ってください。',
+    shareOnX: 'X (Twitter)で共有',
+    shareOnFB: 'Facebookで共有',
+    shareOnLI: 'LinkedInで共有',
+    copyLink: 'リンクをコピー'
   }
 };
