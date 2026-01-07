@@ -237,16 +237,20 @@ export const JsonBuilder: React.FC<JsonBuilderProps> = ({ data, onChange, langua
   };
 
   return (
-    <div className={`flex flex-col h-full ${isDarkMode ? 'bg-[#080808]' : 'bg-[#f1f5f9]'} p-4 transition-colors duration-300`}>
+    <div className={`flex flex-col h-full ${isDarkMode ? 'bg-[#080808]' : 'bg-[#f1f5f9]'} p-6 transition-colors duration-300`}>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className={`text-xl font-bold ${textPrimary} flex items-center gap-2`}>
-            <LayoutGrid className="text-blue-500" />
-            {t.builderTitle}
-          </h2>
-          <p className={`text-xs ${textMuted} mt-1 uppercase tracking-widest`}>{t.builderDesc}</p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className={`p-2 rounded-xl ${isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+              <LayoutGrid size={20} />
+            </div>
+            <h2 className={`text-lg font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t.builderTitle}</h2>
+          </div>
+          <p className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} leading-relaxed max-w-4xl`}>
+            {t.builderDesc}
+          </p>
         </div>
-        <div className={`flex items-center gap-4 text-[10px] font-bold ${textMuted}`}>
+        <div className={`hidden lg:flex items-center gap-4 text-[10px] font-bold ${textMuted}`}>
           <div className="flex items-center gap-1"><Type size={12} className="text-emerald-500"/> STRING</div>
           <div className="flex items-center gap-1"><Hash size={12} className="text-orange-500"/> NUMBER</div>
           <div className="flex items-center gap-1"><ToggleLeft size={12} className="text-purple-500"/> BOOLEAN</div>

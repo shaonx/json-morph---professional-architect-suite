@@ -39,6 +39,8 @@ import {
   Globe,
   Sun,
   Moon,
+  ShieldCheck,
+  Github,
   FileOutput
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -62,6 +64,20 @@ import {
 import { JsonStats, FavoriteKey, ViewMode, TableCandidate, ExportOption } from './types';
 import { Language, translations } from './utils/i18n';
 
+const PageHeader = ({ title, desc, icon, isDarkMode }: { title: string, desc: string, icon: React.ReactNode, isDarkMode: boolean }) => (
+  <div className="mb-6">
+    <div className="flex items-center gap-3 mb-2">
+      <div className={`p-2 rounded-xl ${isDarkMode ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+        {icon}
+      </div>
+      <h2 className={`text-lg font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{title}</h2>
+    </div>
+    <p className={`text-[11px] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} leading-relaxed max-w-4xl`}>
+      {desc}
+    </p>
+  </div>
+);
+
 const App: React.FC = () => {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     return (localStorage.getItem('json-morph-theme') as 'dark' | 'light') || 'dark';
@@ -81,6 +97,22 @@ const App: React.FC = () => {
   const t = translations[language];
 
   const [rawInput, setRawInput] = useState<string>('{\n  "project": "JSON Morph",\n  "version": "2.2.0",\n  "users": [\n    { "id": 1, "name": "Alice", "role": "Admin", "active": true, "joined": 1267388893 },\n    { "id": 2, "name": "Bob", "role": "User", "active": false, "joined": 1267388893 },\n    { "id": 3, "name": "Charlie", "role": "Manager", "active": true, "joined": 1267388893 }\n  ],\n  "settings": {\n    "theme": "dark",\n    "notifications": true,\n    "api_key": "550e8400-e29b-41d4-a716-446655440000"\n  }\n}');
+  const [localInput, setLocalInput] = useState(rawInput);
+  
+  // 同步本地输入到 rawInput
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localInput !== rawInput) {
+        setRawInput(localInput);
+      }
+    }, 400); // 增加防抖时间到 400ms
+    return () => clearTimeout(timer);
+  }, [localInput]);
+
+  // 当 rawInput 从外部改变（比如加载文件）时，同步回 localInput
+  useEffect(() => {
+    setLocalInput(rawInput);
+  }, [rawInput]);
   const [parsedData, setParsedData] = useState<any>(null);
   const [stats, setStats] = useState<JsonStats | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +121,42 @@ const App: React.FC = () => {
   const [transformStep, setTransformStep] = useState('');
   const [selectedPath, setSelectedPath] = useState<string>('');
   const [favorites, setFavorites] = useState<FavoriteKey[]>([]);
-  const [viewMode, setViewMode] = useState<ViewMode>('tree');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const hash = window.location.hash.replace('#/', '');
+    const validModes: ViewMode[] = ['tree', 'table', 'analysis', 'builder', 'export'];
+    return validModes.includes(hash as ViewMode) ? (hash as ViewMode) : 'tree';
+  });
+
+  // 监听路由变化
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#/', '');
+      const validModes: ViewMode[] = ['tree', 'table', 'analysis', 'builder', 'export'];
+      if (validModes.includes(hash as ViewMode)) {
+        setViewMode(hash as ViewMode);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // 同步状态到路由和页面标题
+  useEffect(() => {
+    if (window.location.hash !== `#/${viewMode}`) {
+      window.history.pushState(null, '', `#/${viewMode}`);
+    }
+    
+    // 动态更新标题
+    const modeTitles: Record<ViewMode, string> = {
+      tree: 'Tree View',
+      table: 'Tabular View',
+      analysis: 'Deep Analysis',
+      builder: 'JSON Builder',
+      export: 'Export Center'
+    };
+    document.title = `${modeTitles[viewMode]} | JSON Morph`;
+  }, [viewMode]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTableIdx, setSelectedTableIdx] = useState(0);
   
@@ -98,6 +165,7 @@ const App: React.FC = () => {
   const [isResizingLeft, setIsResizingLeft] = useState(false);
   const [isResizingRight, setIsResizingRight] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
 
@@ -115,6 +183,9 @@ const App: React.FC = () => {
 
   const [expandAllTrigger, setExpandAllTrigger] = useState(0);
   const [collapseAllTrigger, setCollapseAllTrigger] = useState(0);
+
+  const [streamingProgress, setStreamingProgress] = useState<number | null>(null);
+  const [isLargeFile, setIsLargeFile] = useState(false);
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
@@ -222,12 +293,62 @@ const App: React.FC = () => {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setIsProcessing(true);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setRawInput(e.target?.result as string);
-    };
-    reader.readAsText(file);
+
+    const LARGE_FILE_THRESHOLD = 10 * 1024 * 1024; // 10MB
+
+    if (file.size > LARGE_FILE_THRESHOLD) {
+      setIsLargeFile(true);
+      setIsProcessing(true);
+      setStreamingProgress(0);
+      setRawInput(''); // Clear large input to save memory
+      setParsedData(null);
+      setError(null);
+
+      const worker = new Worker(new URL('./workers/jsonParser.worker.ts', import.meta.url), { type: 'module' });
+      
+      worker.onmessage = (e) => {
+        const { type, stats, progress, error: workerError } = e.data;
+        if (type === 'PROGRESS') {
+          setStreamingProgress(progress);
+          // Partial stats can be shown if needed
+          setStats({
+            ...stats,
+            totalChars: file.size,
+            longestValue: { key: '', length: 0, value: '' },
+            keyFrequency: {},
+            valueAggregation: {}
+          });
+        } else if (type === 'DONE') {
+          setStreamingProgress(null);
+          setIsProcessing(false);
+          setStats({
+            ...stats,
+            totalChars: file.size,
+            longestValue: { key: '', length: 0, value: '' },
+            keyFrequency: {},
+            valueAggregation: {}
+          });
+          showToast(language === 'zh' ? '大文件流式解析完成' : 'Large file streamed successfully');
+          worker.terminate();
+        } else if (type === 'ERROR') {
+          setError(workerError);
+          setIsProcessing(false);
+          setStreamingProgress(null);
+          worker.terminate();
+        }
+      };
+
+      worker.postMessage({ file });
+    } else {
+      setIsLargeFile(false);
+      setStreamingProgress(null);
+      setIsProcessing(true);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setRawInput(e.target?.result as string);
+      };
+      reader.readAsText(file);
+    }
     event.target.value = '';
   };
 
@@ -447,13 +568,63 @@ const App: React.FC = () => {
           ))}
         </div>
         
-        <div className="mt-auto flex flex-col gap-4 pb-2">
+        <div className="mt-auto flex flex-col gap-4 pb-2 relative">
+           <button 
+             onClick={() => setIsPrivacyOpen(!isPrivacyOpen)}
+             title={t.privacyTitle}
+             className={`p-2 rounded-lg transition-all ${isPrivacyOpen ? 'bg-emerald-500/20 text-emerald-500' : 'text-gray-500 hover:bg-emerald-500/5 hover:text-emerald-500'}`}
+           >
+             <ShieldCheck size={18} />
+           </button>
+           <a 
+             href="https://github.com/shaonx/json-morph---professional-architect-suite"
+             target="_blank"
+             rel="noopener noreferrer"
+             title={t.githubRepo}
+             className={`p-2 rounded-lg transition-all text-gray-500 hover:bg-gray-500/5 hover:text-blue-500`}
+           >
+             <Github size={18} />
+           </a>
            <button 
              onClick={toggleTheme}
              className={`p-2 rounded-lg transition-all text-gray-500 hover:bg-blue-500/5 hover:text-blue-500`}
            >
              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
            </button>
+
+           <AnimatePresence>
+             {isPrivacyOpen && (
+               <motion.div
+                 initial={{ opacity: 0, x: 20, scale: 0.9 }}
+                 animate={{ opacity: 1, x: 60, scale: 1 }}
+                 exit={{ opacity: 0, x: 20, scale: 0.9 }}
+                 className={`absolute bottom-0 left-0 w-64 ${panelBg} border ${borderColor} rounded-2xl shadow-2xl p-6 z-50 transition-colors duration-300`}
+               >
+                 <div className="flex items-center gap-3 mb-4 text-emerald-500">
+                   <ShieldCheck size={20} />
+                   <h3 className="text-sm font-bold uppercase tracking-widest">{t.privacyTitle}</h3>
+                 </div>
+                 <div className="space-y-4">
+                   {[
+                     { icon: <Zap size={14} />, text: t.privacyLocal },
+                     { icon: <X size={14} />, text: t.privacyNoUpload },
+                     { icon: <History size={14} />, text: t.privacyNoLogs },
+                     { icon: <Trash2 size={14} />, text: t.privacyNoRetention }
+                   ].map((item, i) => (
+                     <div key={i} className="flex items-center gap-3">
+                       <div className={`p-1.5 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-slate-100'} text-gray-500`}>
+                         {item.icon}
+                       </div>
+                       <span className={`text-[11px] font-medium ${textPrimary}`}>{item.text}</span>
+                     </div>
+                   ))}
+                 </div>
+                 <div className={`mt-6 pt-4 border-t ${borderColor} text-[9px] ${textMuted} font-medium leading-relaxed`}>
+                   {language === 'zh' ? '安全是我们的地基。您的数据仅在本地处理，我们绝不收集、上传或保留任何输入内容。' : 'Security is our foundation. Your data is processed locally. We never collect, upload, or retain any input content.'}
+                 </div>
+               </motion.div>
+             )}
+           </AnimatePresence>
         </div>
       </div>
 
@@ -523,8 +694,8 @@ const App: React.FC = () => {
               <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 hover:text-blue-500"><Upload size={10} /> {t.loadFile}</button>
             </div>
             <textarea
-              value={rawInput}
-              onChange={(e) => setRawInput(e.target.value)}
+              value={localInput}
+              onChange={(e) => setLocalInput(e.target.value)}
               className={`flex-1 bg-transparent p-4 font-mono text-xs resize-none focus:outline-none ${isDarkMode ? 'text-blue-100/70' : 'text-slate-600'}`}
               placeholder="Paste JSON source here..."
             />
@@ -602,12 +773,59 @@ const App: React.FC = () => {
                   </div>
                 </motion.div>
               ) : viewMode === 'tree' ? (
-                <div className="flex flex-col h-full p-4 gap-3">
+                <div className="flex flex-col h-full p-6 gap-3">
+                  <PageHeader 
+                    isDarkMode={isDarkMode} 
+                    title={t.treeTitle} 
+                    desc={t.treeDesc} 
+                    icon={<LayoutGrid size={20} />} 
+                  />
+                  {isLargeFile && (
+                    <div className={`p-4 ${secondaryBg} border border-blue-500/20 rounded-xl flex flex-col gap-3 shadow-sm`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+                            <Zap size={18} className={streamingProgress !== null ? "animate-pulse" : ""} />
+                          </div>
+                          <div>
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-blue-500">{language === 'zh' ? '大文件流式解析模式' : 'Large File Streaming Mode'}</h3>
+                            <p className={`text-[10px] ${textMuted} mt-0.5 font-medium`}>
+                              {language === 'zh' ? '由于文件过大，已禁用全量预览以保护浏览器性能。' : 'Full preview disabled to protect browser performance due to file size.'}
+                            </p>
+                          </div>
+                        </div>
+                        {streamingProgress !== null && (
+                          <span className="text-xs font-mono font-bold text-blue-500">{streamingProgress.toFixed(1)}%</span>
+                        )}
+                      </div>
+                      
+                      {streamingProgress !== null && (
+                        <div className={`h-1.5 w-full ${isDarkMode ? 'bg-gray-800' : 'bg-slate-100'} rounded-full overflow-hidden`}>
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${streamingProgress}%` }}
+                            className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {stats && (
                     <div className="grid grid-cols-4 gap-2 mb-1">
                       <StatsCard isDarkMode={isDarkMode} label={t.keys} value={stats.keyCount} icon={<Hash size={14} />} color="bg-blue-500" />
                       <StatsCard isDarkMode={isDarkMode} label={t.depth} value={stats.maxDepth} icon={<Layers size={14} />} color="bg-purple-500" />
-                      <StatsCard isDarkMode={isDarkMode} label={t.size} value={`${(stats.totalChars / 1024).toFixed(1)} KB`} icon={<TypeIcon size={14} />} color="bg-emerald-500" />
+                      <StatsCard 
+                        isDarkMode={isDarkMode} 
+                        label={t.size} 
+                        value={stats.totalChars > 1024 * 1024 * 1024 
+                          ? `${(stats.totalChars / (1024 * 1024 * 1024)).toFixed(2)} GB`
+                          : stats.totalChars > 1024 * 1024 
+                            ? `${(stats.totalChars / (1024 * 1024)).toFixed(1)} MB`
+                            : `${(stats.totalChars / 1024).toFixed(1)} KB`} 
+                        icon={<TypeIcon size={14} />} 
+                        color="bg-emerald-500" 
+                      />
                       <StatsCard isDarkMode={isDarkMode} label={t.peakVal} value={stats.longestValue.length} icon={<Maximize2 size={14} />} color="bg-orange-500" />
                     </div>
                   )}
@@ -650,7 +868,13 @@ const App: React.FC = () => {
               ) : viewMode === 'builder' ? (
                 <JsonBuilder isDarkMode={isDarkMode} language={language} data={parsedData || {}} onChange={(newData) => setRawInput(JSON.stringify(newData, null, 2))} />
               ) : viewMode === 'table' ? (
-                <div className="flex flex-col h-full p-4 overflow-hidden">
+                <div className="flex flex-col h-full p-6 overflow-hidden">
+                  <PageHeader 
+                    isDarkMode={isDarkMode} 
+                    title={t.tableTitle} 
+                    desc={t.tableDesc} 
+                    icon={<TableIcon size={20} />} 
+                  />
                    <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2"><TableIcon className="text-blue-500" size={16} /><h2 className={`text-sm font-bold uppercase tracking-widest ${textPrimary}`}>{t.tabularEngine}</h2></div>
@@ -686,12 +910,28 @@ const App: React.FC = () => {
                 </div>
               ) : viewMode === 'analysis' ? (
                 <div className="p-6 overflow-auto h-full space-y-6">
+                  <PageHeader 
+                    isDarkMode={isDarkMode} 
+                    title={t.analysisTitle} 
+                    desc={t.analysisDesc} 
+                    icon={<Zap size={20} />} 
+                  />
                   {stats ? (
                     <>
                       <div className="grid grid-cols-4 gap-3">
                         <StatsCard isDarkMode={isDarkMode} label={t.keys} value={stats.keyCount} icon={<Hash size={16} />} color="bg-blue-500" />
                         <StatsCard isDarkMode={isDarkMode} label={t.depth} value={stats.maxDepth} icon={<Layers size={16} />} color="bg-purple-500" />
-                        <StatsCard isDarkMode={isDarkMode} label={t.size} value={`${(stats.totalChars / 1024).toFixed(1)} KB`} icon={<TypeIcon size={16} />} color="bg-emerald-500" />
+                        <StatsCard 
+                          isDarkMode={isDarkMode} 
+                          label={t.size} 
+                          value={stats.totalChars > 1024 * 1024 * 1024 
+                            ? `${(stats.totalChars / (1024 * 1024 * 1024)).toFixed(2)} GB`
+                            : stats.totalChars > 1024 * 1024 
+                              ? `${(stats.totalChars / (1024 * 1024)).toFixed(1)} MB`
+                              : `${(stats.totalChars / 1024).toFixed(1)} KB`} 
+                          icon={<TypeIcon size={16} />} 
+                          color="bg-emerald-500" 
+                        />
                         <StatsCard isDarkMode={isDarkMode} label={t.peakVal} value={stats.longestValue.length} icon={<Maximize2 size={16} />} color="bg-orange-500" />
                       </div>
                       
@@ -745,15 +985,12 @@ const App: React.FC = () => {
                 </div>
               ) : (
                 <div className="p-8 h-full overflow-auto relative">
-                  <div className="mb-8">
-                    <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-2 flex items-center gap-3`}>
-                      <FileOutput className="text-blue-500" />
-                      {t.exportTitle}
-                    </h2>
-                    <p className={`${textMuted} text-sm max-w-2xl`}>
-                      {t.exportDesc}
-                    </p>
-                  </div>
+                  <PageHeader 
+                    isDarkMode={isDarkMode} 
+                    title={t.exportTitle} 
+                    desc={t.exportDesc} 
+                    icon={<FileOutput size={20} />} 
+                  />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                     {exportOptions.map((option) => (

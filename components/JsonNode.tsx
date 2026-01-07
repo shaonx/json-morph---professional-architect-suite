@@ -47,6 +47,7 @@ export const JsonNode: React.FC<JsonNodeProps> = memo(({
   const fieldType = detectType(value);
 
   const [isOpen, setIsOpen] = useState(depth < 2);
+  const [displayLimit, setDisplayLimit] = useState(100);
 
   const isSearchActive = searchQuery.trim().length > 0;
   const isMatch = searchResult?.matchingPaths.has(path);
@@ -74,9 +75,11 @@ export const JsonNode: React.FC<JsonNodeProps> = memo(({
   }, [selectedPath, path, isObject]);
   
   const highlightText = (text: string) => {
-    if (!searchQuery) return text;
+    if (!searchQuery || !text) return text;
     const q = searchQuery.toLowerCase();
-    const parts = text.split(new RegExp(`(${searchQuery})`, 'gi'));
+    if (!text.toLowerCase().includes(q)) return text;
+    
+    const parts = text.split(new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
     return (
       <>
         {parts.map((part, i) => 
@@ -153,7 +156,7 @@ export const JsonNode: React.FC<JsonNodeProps> = memo(({
 
       {isObject && isOpen && (
         <div className={`border-l ${isDarkMode ? 'border-gray-800/50' : 'border-slate-200'} ml-2`}>
-          {Object.entries(value).map(([k, v]) => (
+          {Object.entries(value).slice(0, isSearchActive ? undefined : displayLimit).map(([k, v]) => (
             <JsonNode
               isDarkMode={isDarkMode}
               key={k}
@@ -171,6 +174,14 @@ export const JsonNode: React.FC<JsonNodeProps> = memo(({
               collapseAllTrigger={collapseAllTrigger}
             />
           ))}
+          {!isSearchActive && Object.keys(value).length > displayLimit && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); setDisplayLimit(prev => prev + 200); }}
+              className={`ml-6 my-2 text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'} transition-colors`}
+            >
+              + Load {Object.keys(value).length - displayLimit} more items
+            </button>
+          )}
         </div>
       )}
     </div>

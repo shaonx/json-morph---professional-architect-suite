@@ -65,7 +65,19 @@ export const translations = {
     shareOnX: 'Share on X',
     shareOnFB: 'Share on Facebook',
     shareOnLI: 'Share on LinkedIn',
-    copyLink: 'Copy Link'
+    copyLink: 'Copy Link',
+    privacyTitle: 'Privacy & Security',
+    privacyLocal: '100% Local Processing',
+    privacyNoUpload: 'No Server Uploads',
+    privacyNoLogs: 'No Data Logging',
+    privacyNoRetention: 'No Data Retention',
+    githubRepo: 'GitHub Repository',
+    treeTitle: 'Visual Hierarchy Explorer',
+    treeDesc: 'Navigate complex JSON structures with high-performance tree rendering. Supports deep search, node pinning, and instant path copying.',
+    tableTitle: 'Pattern Recognition Engine',
+    tableDesc: 'Automatically detect repetitive arrays and flatten them into a spreadsheet-like tabular view for bulk data inspection.',
+    analysisTitle: 'Structural Intelligence',
+    analysisDesc: 'Deep dive into your data distribution. Analyze value aggregation, key frequency, and type consistency across the entire document.'
   },
   zh: {
     tree: '树状视图',
@@ -130,7 +142,19 @@ export const translations = {
     shareOnX: '分享到 X (Twitter)',
     shareOnFB: '分享到 Facebook',
     shareOnLI: '分享到 LinkedIn',
-    copyLink: '复制链接'
+    copyLink: '复制链接',
+    privacyTitle: '隐私与安全承诺',
+    privacyLocal: '100% 本地处理',
+    privacyNoUpload: '绝不上传服务器',
+    privacyNoLogs: '无日志记录',
+    privacyNoRetention: '无数据保留',
+    githubRepo: 'GitHub 源代码仓库',
+    treeTitle: '视觉层级探索器',
+    treeDesc: '通过高性能树状渲染，轻松导航复杂的 JSON 结构。支持深度搜索、节点固定及即时路径复制。',
+    tableTitle: '模式识别引擎',
+    tableDesc: '自动检测重复的数组模式，并将其扁平化为类似电子表格的表格视图，方便进行批量数据检查。',
+    analysisTitle: '结构化智能分析',
+    analysisDesc: '深入了解您的数据分布。分析整个文档中的数值聚合、键名频率及类型一致性。'
   },
   zh_TW: {
     tree: '樹狀視圖',
@@ -188,7 +212,13 @@ export const translations = {
     imageDesc: '渲染精美的程式碼片段圖像。',
     mdDesc: '文檔中的格式化表格。',
     tomlDesc: '最小配置文件格式。',
-    jsDesc: '導出為原生 JavaScript 物件程式碼。'
+    jsDesc: '導出為原生 JavaScript 物件程式碼。',
+    privacyTitle: '隱私與安全承諾',
+    privacyLocal: '100% 本地處理',
+    privacyNoUpload: '絕不上傳伺服器',
+    privacyNoLogs: '無日誌記錄',
+    privacyNoRetention: '無數據保留',
+    githubRepo: 'GitHub 原始碼倉庫'
   },
   ko: {
     tree: '트리 뷰',
