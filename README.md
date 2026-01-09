@@ -31,9 +31,32 @@
 ### 🌍 全球化支持 (Global Ready)
 - 完美适配简体中文、繁体中文、英语、日语、韩语。
 
+### 🌐 语义化 Path 路由 (SEO Friendly Paths)
+- **独立工具路径**：每个功能都有独立的 SEO 友好路径（如 `/json-formatter`, `/json-analyzer`），便于搜索引擎索引和社交分享。
+- **History API**：基于现代浏览器 History API，支持前进后退，交互体验更接近原生应用。
+
 ---
 
-## 🛠️ 技术栈 | Tech Stack
+## 🛠️ 部署指南 | Deployment Guide
+
+由于本项目采用了 **Path 路由 (History API)**，在生产环境部署时，需要配置服务端 fallback 到 `index.html`，以避免刷新页面时出现 404 错误。
+
+### Nginx 配置示例
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    root /path/to/json-morph;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+```
+
+### Vercel / Netlify
+自动识别为 SPA 项目，通常无需额外配置。
 
 - **Framework**: React 18 + Vite
 - **Styling**: Tailwind CSS

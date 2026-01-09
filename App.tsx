@@ -44,6 +44,7 @@ import {
   FileOutput
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { JsonNode } from './components/JsonNode';
 import { StatsCard } from './components/StatsCard';
 import { JsonBuilder } from './components/JsonBuilder';
@@ -63,6 +64,106 @@ import {
 } from './utils/jsonUtils';
 import { JsonStats, FavoriteKey, ViewMode, TableCandidate, ExportOption } from './types';
 import { Language, translations } from './utils/i18n';
+import { seoContent } from './utils/seoContent';
+
+const SeoMetadata = ({ mode, language }: { mode: ViewMode, language: Language }) => {
+  const content = seoContent[language === 'zh' ? 'zh' : 'en'][mode] || seoContent['en'][mode];
+  const baseUrl = 'https://json.open-close.shop';
+  
+  if (!content) return null;
+
+  const PATH_MAP: Record<string, string> = {
+    'tree': '/json-formatter',
+    'builder': '/json-builder',
+    'table': '/json-tabular',
+    'analysis': '/json-analyzer',
+    'export': '/json-converter'
+  };
+  
+  const canonicalUrl = `${baseUrl}${PATH_MAP[mode] || ''}`;
+  
+  return (
+    <Helmet>
+      <title>{content.h1} | JSON Morph</title>
+      <meta name="description" content={content.description} />
+      <link rel="canonical" href={canonicalUrl} />
+      
+      {/* Open Graph */}
+      <meta property="og:title" content={`${content.h1} | JSON Morph`} />
+      <meta property="og:description" content={content.description} />
+      <meta property="og:url" content={canonicalUrl} />
+      <meta property="og:type" content="website" />
+      <meta property="og:site_name" content="JSON Morph" />
+      
+      {/* Twitter */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={`${content.h1} | JSON Morph`} />
+      <meta name="twitter:description" content={content.description} />
+    </Helmet>
+  );
+};
+
+const SeoSection = ({ mode, language, isDarkMode }: { mode: ViewMode, language: Language, isDarkMode: boolean }) => {
+  const content = seoContent[language === 'zh' ? 'zh' : 'en'][mode] || seoContent['en'][mode];
+  
+  if (!content) return null;
+
+  const t = translations[language];
+
+  return (
+    <div className={`mt-20 py-16 px-8 border-t ${isDarkMode ? 'border-gray-900 bg-black/40' : 'border-slate-100 bg-slate-50/50'}`}>
+      <div className="max-w-5xl mx-auto">
+        <h1 className={`text-3xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{content.h1}</h1>
+        <p className={`text-lg mb-12 leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+          {content.description}
+        </p>
+        
+        <div className="grid md:grid-cols-2 gap-12 mb-16">
+          <div>
+            <h2 className={`text-xl font-bold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+              <Zap size={20} /> {language === 'zh' ? '核心特性' : 'Core Features'}
+            </h2>
+            <ul className="space-y-3">
+              {content.features.map((f, i) => (
+                <li key={i} className={`flex items-start gap-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                  <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h2 className={`text-xl font-bold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+              <Layers size={20} /> {language === 'zh' ? '使用场景' : 'Use Cases'}
+            </h2>
+            <ul className="space-y-3">
+              {content.useCases.map((u, i) => (
+                <li key={i} className={`flex items-start gap-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                  <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
+                  {u}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="mb-16">
+          <h2 className={`text-xl font-bold mb-8 text-center ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            {language === 'zh' ? '常见问题解答 (FAQ)' : 'Frequently Asked Questions'}
+          </h2>
+          <div className="grid gap-6">
+            {content.faq.map((item, i) => (
+              <div key={i} className={`p-6 rounded-2xl border ${isDarkMode ? 'border-gray-800 bg-gray-900/50' : 'border-slate-200 bg-white'}`}>
+                <h3 className={`font-bold mb-2 ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Q: {item.q}</h3>
+                <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>A: {item.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const PageHeader = ({ title, desc, icon, isDarkMode }: { title: string, desc: string, icon: React.ReactNode, isDarkMode: boolean }) => (
   <div className="mb-6">
@@ -121,41 +222,52 @@ const App: React.FC = () => {
   const [transformStep, setTransformStep] = useState('');
   const [selectedPath, setSelectedPath] = useState<string>('');
   const [favorites, setFavorites] = useState<FavoriteKey[]>([]);
+  const PATH_MAP: Record<string, ViewMode> = {
+    '/json-formatter': 'tree',
+    '/json-builder': 'builder',
+    '/json-tabular': 'table',
+    '/json-analyzer': 'analysis',
+    '/json-converter': 'export',
+    // 兼容旧路由或默认路由
+    '/tree': 'tree',
+    '/builder': 'builder',
+    '/table': 'table',
+    '/analysis': 'analysis',
+    '/export': 'export'
+  };
+
+  const REVERSE_PATH_MAP: Record<ViewMode, string> = {
+    tree: '/json-formatter',
+    builder: '/json-builder',
+    table: '/json-tabular',
+    analysis: '/json-analyzer',
+    export: '/json-converter'
+  };
+
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    const hash = window.location.hash.replace('#/', '');
-    const validModes: ViewMode[] = ['tree', 'table', 'analysis', 'builder', 'export'];
-    return validModes.includes(hash as ViewMode) ? (hash as ViewMode) : 'tree';
+    const path = window.location.pathname;
+    return PATH_MAP[path] || 'tree';
   });
 
-  // 监听路由变化
+  // 监听浏览器前进后退
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#/', '');
-      const validModes: ViewMode[] = ['tree', 'table', 'analysis', 'builder', 'export'];
-      if (validModes.includes(hash as ViewMode)) {
-        setViewMode(hash as ViewMode);
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (PATH_MAP[path]) {
+        setViewMode(PATH_MAP[path]);
       }
     };
 
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   // 同步状态到路由和页面标题
   useEffect(() => {
-    if (window.location.hash !== `#/${viewMode}`) {
-      window.history.pushState(null, '', `#/${viewMode}`);
+    const targetPath = REVERSE_PATH_MAP[viewMode];
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState(null, '', targetPath);
     }
-    
-    // 动态更新标题
-    const modeTitles: Record<ViewMode, string> = {
-      tree: 'Tree View',
-      table: 'Tabular View',
-      analysis: 'Deep Analysis',
-      builder: 'JSON Builder',
-      export: 'Export Center'
-    };
-    document.title = `${modeTitles[viewMode]} | JSON Morph`;
   }, [viewMode]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTableIdx, setSelectedTableIdx] = useState(0);
@@ -484,6 +596,7 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex h-screen ${appBg} ${textPrimary} overflow-hidden font-sans transition-colors duration-300`}>
+      <SeoMetadata mode={viewMode} language={language} />
       <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileUpload} />
 
       <AnimatePresence>
@@ -773,13 +886,14 @@ const App: React.FC = () => {
                   </div>
                 </motion.div>
               ) : viewMode === 'tree' ? (
-                <div className="flex flex-col h-full p-6 gap-3">
-                  <PageHeader 
-                    isDarkMode={isDarkMode} 
-                    title={t.treeTitle} 
-                    desc={t.treeDesc} 
-                    icon={<LayoutGrid size={20} />} 
-                  />
+                <div className="flex flex-col h-full overflow-auto custom-scrollbar">
+                  <div className="p-6 flex flex-col gap-3">
+                    <PageHeader 
+                      isDarkMode={isDarkMode} 
+                      title={t.treeTitle} 
+                      desc={t.treeDesc} 
+                      icon={<LayoutGrid size={20} />} 
+                    />
                   {isLargeFile && (
                     <div className={`p-4 ${secondaryBg} border border-blue-500/20 rounded-xl flex flex-col gap-3 shadow-sm`}>
                       <div className="flex items-center justify-between">
@@ -864,49 +978,67 @@ const App: React.FC = () => {
                       <div className={`h-full flex flex-col items-center justify-center opacity-20 ${textPrimary}`}><Code2 size={48} className="mb-4" /><span className="text-xs uppercase tracking-widest">Waiting for source...</span></div>
                     )}
                   </div>
+                  <SeoSection mode="tree" language={language} isDarkMode={isDarkMode} />
                 </div>
-              ) : viewMode === 'builder' ? (
-                <JsonBuilder isDarkMode={isDarkMode} language={language} data={parsedData || {}} onChange={(newData) => setRawInput(JSON.stringify(newData, null, 2))} />
+              </div>
+            ) : viewMode === 'builder' ? (
+                <div className="flex flex-col h-full overflow-auto custom-scrollbar">
+                  <div className="p-6">
+                    <PageHeader 
+                      isDarkMode={isDarkMode} 
+                      title={t.builderTitle} 
+                      desc={t.builderDesc} 
+                      icon={<Wand2 size={20} />} 
+                    />
+                    <JsonBuilder isDarkMode={isDarkMode} language={language} data={parsedData || {}} onChange={(newData) => setRawInput(JSON.stringify(newData, null, 2))} />
+                  </div>
+                  <SeoSection mode="builder" language={language} isDarkMode={isDarkMode} />
+                </div>
               ) : viewMode === 'table' ? (
-                <div className="flex flex-col h-full p-6 overflow-hidden">
-                  <PageHeader 
-                    isDarkMode={isDarkMode} 
-                    title={t.tableTitle} 
-                    desc={t.tableDesc} 
-                    icon={<TableIcon size={20} />} 
-                  />
-                   <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2"><TableIcon className="text-blue-500" size={16} /><h2 className={`text-sm font-bold uppercase tracking-widest ${textPrimary}`}>{t.tabularEngine}</h2></div>
+                <div className="flex flex-col h-full overflow-auto custom-scrollbar">
+                  <div className="p-6 flex flex-col gap-4">
+                    <PageHeader 
+                      isDarkMode={isDarkMode} 
+                      title={t.tableTitle} 
+                      desc={t.tableDesc} 
+                      icon={<TableIcon size={20} />} 
+                    />
+                     <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2"><TableIcon className="text-blue-500" size={16} /><h2 className={`text-sm font-bold uppercase tracking-widest ${textPrimary}`}>{t.tabularEngine}</h2></div>
+                        {tableCandidates.length > 0 && (
+                          <button 
+                            onClick={handleDirectExportCsv} 
+                            className="flex items-center gap-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-500/20 transition-all"
+                          >
+                            <FileSpreadsheet size={12} /> EXPORT_CSV
+                          </button>
+                        )}
+                      </div>
                       {tableCandidates.length > 0 && (
-                        <button 
-                          onClick={handleDirectExportCsv} 
-                          className="flex items-center gap-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-3 py-1 rounded text-[10px] font-bold hover:bg-emerald-500/20 transition-all"
-                        >
-                          <FileSpreadsheet size={12} /> EXPORT_CSV
-                        </button>
+                        <div className="flex items-center gap-2"><span className={`text-[10px] ${textMuted} font-bold`}>{t.activeSet}:</span><select value={selectedTableIdx} onChange={(e) => setSelectedTableIdx(parseInt(e.target.value))} className={`${secondaryBg} border ${borderColor} rounded text-[10px] px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500`}>{tableCandidates.map((tc, idx) => (<option key={idx} value={idx}>{tc.path} ({tc.rows.length} rows)</option>))}</select></div>
                       )}
                     </div>
-                    {tableCandidates.length > 0 && (
-                      <div className="flex items-center gap-2"><span className={`text-[10px] ${textMuted} font-bold`}>{t.activeSet}:</span><select value={selectedTableIdx} onChange={(e) => setSelectedTableIdx(parseInt(e.target.value))} className={`${secondaryBg} border ${borderColor} rounded text-[10px] px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500`}>{tableCandidates.map((tc, idx) => (<option key={idx} value={idx}>{tc.path} ({tc.rows.length} rows)</option>))}</select></div>
-                    )}
+                    <div className={`${panelBg} border ${borderColor} rounded-xl overflow-hidden relative transition-colors duration-300 min-h-[400px]`}>
+                      {tableCandidates.length > 0 ? (
+                        <div className="overflow-auto max-h-[600px] custom-scrollbar">
+                          <table className={`w-full text-left text-[11px] border-collapse ${textPrimary}`}>
+                            <thead className={`sticky top-0 ${secondaryBg} z-10`}>
+                              <tr><th className={`p-3 border-b ${borderColor} ${textMuted} font-bold uppercase tracking-tighter w-12 text-center`}>#</th>{tableCandidates[selectedTableIdx].headers.map(header => (<th key={header} className={`p-3 border-b ${borderColor} text-blue-500 font-bold uppercase tracking-tight`}>{header}</th>))}</tr>
+                            </thead>
+                            <tbody>
+                              {tableCandidates[selectedTableIdx].rows.map((row, idx) => (
+                                <tr key={idx} className={`hover:bg-blue-500/5 transition-colors group border-b ${isDarkMode ? 'border-gray-900/50' : 'border-slate-100'} last:border-0`}><td className={`p-3 ${textMuted} text-center font-mono`}>{idx + 1}</td>{tableCandidates[selectedTableIdx].headers.map(header => { const val = row[header]; return (<td key={header} className="p-3 truncate max-w-[200px] font-mono group-hover:text-blue-500 transition-colors">{typeof val === 'object' && val !== null ? JSON.stringify(val) : String(val)}</td>); })}</tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="h-[400px] flex flex-col items-center justify-center opacity-20"><AlertCircle size={48} className="mb-4" /><span className="text-xs uppercase tracking-widest">{t.noTable}</span></div>
+                      )}
+                    </div>
                   </div>
-                  <div className={`flex-1 ${panelBg} border ${borderColor} rounded-xl overflow-auto custom-scrollbar relative transition-colors duration-300`}>
-                    {tableCandidates.length > 0 ? (
-                      <table className={`w-full text-left text-[11px] border-collapse ${textPrimary}`}>
-                        <thead className={`sticky top-0 ${secondaryBg} z-10`}>
-                          <tr><th className={`p-3 border-b ${borderColor} ${textMuted} font-bold uppercase tracking-tighter w-12 text-center`}>#</th>{tableCandidates[selectedTableIdx].headers.map(header => (<th key={header} className={`p-3 border-b ${borderColor} text-blue-500 font-bold uppercase tracking-tight`}>{header}</th>))}</tr>
-                        </thead>
-                        <tbody>
-                          {tableCandidates[selectedTableIdx].rows.map((row, idx) => (
-                            <tr key={idx} className={`hover:bg-blue-500/5 transition-colors group border-b ${isDarkMode ? 'border-gray-900/50' : 'border-slate-100'} last:border-0`}><td className={`p-3 ${textMuted} text-center font-mono`}>{idx + 1}</td>{tableCandidates[selectedTableIdx].headers.map(header => { const val = row[header]; return (<td key={header} className="p-3 truncate max-w-[200px] font-mono group-hover:text-blue-500 transition-colors">{typeof val === 'object' && val !== null ? JSON.stringify(val) : String(val)}</td>); })}</tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center opacity-20"><AlertCircle size={48} className="mb-4" /><span className="text-xs uppercase tracking-widest">{t.noTable}</span></div>
-                    )}
-                  </div>
+                  <SeoSection mode="table" language={language} isDarkMode={isDarkMode} />
                 </div>
               ) : viewMode === 'analysis' ? (
                 <div className="p-6 overflow-auto h-full space-y-6">
@@ -976,70 +1108,77 @@ const App: React.FC = () => {
                                 <div key={k} className={`flex items-center justify-between py-1 border-b ${borderColor} last:border-0 group`}><span className={`text-xs font-mono ${textMuted} group-hover:text-blue-500 transition-colors`}>{k}</span><span className={`text-[10px] font-bold ${textMuted}`}>{v} {t.hits}</span></div>
                               ))}
                            </div>
-                         </div>
                       </div>
-                    </>
-                  ) : (
-                    <div className="h-full flex flex-col items-center justify-center opacity-20"><Zap size={48} className="mb-4" /><span className="text-xs uppercase tracking-widest">{t.runAnalysis}</span></div>
-                  )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center opacity-20"><Zap size={48} className="mb-4" /><span className="text-xs uppercase tracking-widest">{t.runAnalysis}</span></div>
+                )}
+                <SeoSection mode="analysis" language={language} isDarkMode={isDarkMode} />
                 </div>
               ) : (
-                <div className="p-8 h-full overflow-auto relative">
-                  <PageHeader 
-                    isDarkMode={isDarkMode} 
-                    title={t.exportTitle} 
-                    desc={t.exportDesc} 
-                    icon={<FileOutput size={20} />} 
-                  />
+                <div className="p-8 h-full overflow-auto relative custom-scrollbar">
+                  <div className="min-h-full flex flex-col">
+                    <PageHeader 
+                      isDarkMode={isDarkMode} 
+                      title={t.exportTitle} 
+                      desc={t.exportDesc} 
+                      icon={<FileOutput size={20} />} 
+                    />
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                    {exportOptions.map((option) => (
-                      <motion.div
-                        key={option.id}
-                        whileHover={{ y: -4, scale: 1.02 }}
-                        className={`p-6 ${panelBg} border ${borderColor} rounded-2xl cursor-pointer group transition-all relative overflow-hidden shadow-sm hover:shadow-xl`}
-                        onClick={() => handleExport(option)}
-                      >
-                        <div className="flex justify-between items-start mb-4">
-                          <div className={`p-3 rounded-xl ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-100'} ${option.color}`}>
-                            {option.id === 'json' && <FileJson size={24} />}
-                            {option.id === 'yaml' && <FileCode size={24} />}
-                            {option.id === 'csv' && <FileSpreadsheet size={24} />}
-                            {option.id === 'image' && <ImageIcon size={24} />}
-                            {option.id === 'md' && <FileText size={24} />}
-                            {option.id === 'toml' && <Terminal size={24} />}
-                            {option.id === 'js' && <FileSignature size={24} />}
-                            {option.id === 'xml' && <Box size={24} />}
-                            {option.id === 'tsv' && <Layers size={24} />}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                      {exportOptions.map((option) => (
+                        <motion.div
+                          key={option.id}
+                          whileHover={{ y: -4, scale: 1.02 }}
+                          className={`p-6 ${panelBg} border ${borderColor} rounded-2xl cursor-pointer group transition-all relative overflow-hidden shadow-sm hover:shadow-xl`}
+                          onClick={() => handleExport(option)}
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <div className={`p-3 rounded-xl ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-100'} ${option.color}`}>
+                              {option.id === 'json' && <FileJson size={24} />}
+                              {option.id === 'yaml' && <FileCode size={24} />}
+                              {option.id === 'csv' && <FileSpreadsheet size={24} />}
+                              {option.id === 'image' && <ImageIcon size={24} />}
+                              {option.id === 'md' && <FileText size={24} />}
+                              {option.id === 'toml' && <Terminal size={24} />}
+                              {option.id === 'js' && <FileSignature size={24} />}
+                              {option.id === 'xml' && <Box size={24} />}
+                              {option.id === 'tsv' && <Layers size={24} />}
+                            </div>
+                            <Share2 size={14} className={`${textMuted} group-hover:text-blue-500 transition-colors`} />
                           </div>
-                          <Share2 size={14} className={`${textMuted} group-hover:text-blue-500 transition-colors`} />
-                        </div>
-                        <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-1 group-hover:text-blue-500 transition-colors`}>{option.title}</h3>
-                        <p className={`${textMuted} text-xs leading-relaxed`}>{option.description}</p>
-                        
-                        <div className="absolute bottom-0 left-0 h-1 bg-blue-500/0 group-hover:bg-blue-500/50 w-full transition-all duration-300" />
-                      </motion.div>
-                    ))}
-                  </div>
-                  
-                  <div className={`${isDarkMode ? 'bg-[#111]' : 'bg-white shadow-lg'} p-6 rounded-2xl border ${borderColor} flex flex-col md:flex-row items-center gap-6`}>
-                    <div className="bg-blue-500/10 p-4 rounded-full">
-                      <Cpu className="text-blue-500" size={32} />
+                          <h3 className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-1 group-hover:text-blue-500 transition-colors`}>{option.title}</h3>
+                          <p className={`${textMuted} text-xs leading-relaxed`}>{option.description}</p>
+                          
+                          <div className="absolute bottom-0 left-0 h-1 bg-blue-500/0 group-hover:bg-blue-500/50 w-full transition-all duration-300" />
+                        </motion.div>
+                      ))}
                     </div>
-                    <div>
-                      <h4 className={`${isDarkMode ? 'text-white' : 'text-slate-900'} font-bold mb-1 uppercase tracking-widest text-xs`}>{t.engineV3}</h4>
-                      <p className={`${textMuted} text-xs leading-relaxed max-w-lg`}>
-                        {t.engineDesc}
-                      </p>
+                    
+                    <div className={`${isDarkMode ? 'bg-[#111]' : 'bg-white shadow-lg'} p-6 rounded-2xl border ${borderColor} flex flex-col md:flex-row items-center gap-6 mb-12`}>
+                      <div className="bg-blue-500/10 p-4 rounded-full">
+                        <Cpu className="text-blue-500" size={32} />
+                      </div>
+                      <div>
+                        <h4 className={`${isDarkMode ? 'text-white' : 'text-slate-900'} font-bold mb-1 uppercase tracking-widest text-xs`}>{t.engineV3}</h4>
+                        <p className={`${textMuted} text-xs leading-relaxed max-w-lg`}>
+                          {t.engineDesc}
+                        </p>
+                      </div>
+                      <div className="ml-auto flex gap-2">
+                        <Box className={textMuted} size={24} />
+                        <Layers className={textMuted} size={24} />
+                      </div>
                     </div>
-                    <div className="ml-auto flex gap-2">
-                       <Box className={textMuted} size={24} />
-                       <Layers className={textMuted} size={24} />
-                    </div>
+                    
+                    <div className="mt-auto">
+                      <SeoSection mode="export" language={language} isDarkMode={isDarkMode} />
                   </div>
                 </div>
-              )}
-            </AnimatePresence>
+              </div>
+            )}
+          </AnimatePresence>
           </div>
 
           {/* Right Panel: Pinned Nodes */}
